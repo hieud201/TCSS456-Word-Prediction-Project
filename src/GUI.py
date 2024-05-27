@@ -36,15 +36,14 @@ def create_window():
 
 
 def on_text_change(event, textbox):
-    text = textbox.get(1.0, tk.END).replace("\n", '')
+    if (event.char == ' '):
+        return
+    
+    text = textbox.get(1.0, tk.END).replace("\n", '').split(" ")[-1]
+    
+    
     # print("Text in the textbox:", text)
     # print(event)
     print(VulcanLanguageModel.predict(text))
     
-    
-    
-
-
-
-
 main()
