@@ -30,7 +30,8 @@ def init():
     perplexity = calculatePerplexity(test_sentences, bigram_word_prob, unigram_word_dict)
     print(perplexity)
     
-blacklist = '”’‘'
+    
+blacklist = '”’‘“ …'
 punctuation = "!\"#$%&()*+, ./:;<=>?@[]^_\`{|}~"
 def __parseSentence(sentence: str):
     for char in blacklist:
@@ -41,11 +42,6 @@ def __parseSentence(sentence: str):
     for word in sentence.split(" "):
         if not word:
             continue
-        
-        if word == "ek'wak.":
-            print(word[:-1])
-            print(word[-1])
-        
         
         if word[-1] in punctuation:
             output.append(word[:-1])
@@ -86,6 +82,8 @@ def __load_docs() -> tuple[list[str], list[str]]:
 def __count_freq(word_list: list[str]):
     unique_words = set()
     unigram_word_dict = {}
+    
+    
     for word in word_list:
         unique_words.add(word)
         try:
@@ -108,13 +106,14 @@ def __count_freq(word_list: list[str]):
 def __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words):
     bigram_word_prob = {}
     k = 0.1
+    
+    
     for word in bigram_word_dict.keys():
         prev_word = word.split()[0]
         bigram_word_prob[word] = (bigram_word_dict[word] + k) / (unigram_word_dict[prev_word] + k * len(unique_words))
 
     
     return bigram_word_prob
-
 
 
 def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float]]:
@@ -161,7 +160,6 @@ def predict(word: str) -> tuple[str, str, str]:
         
     results = []
     
-    blacklist = ['’', '--', '…', '”', '“']
     for tup in r:
         if ((tup[0] in string.punctuation) == False) and ((tup[0] in blacklist) == False):
             results.append(tup)
@@ -190,7 +188,6 @@ def calculatePerplexity(testing_list, bigram_word_prob, unigram_word_dict):
                 except KeyError:  # If prev word doesn't exist in training data
                     sent_prob *= k / (len(unigram_word_dict) * k)
 
-        total_prob *= Decimal(sent_prob)
 
     try:
         perplexity = (1 / total_prob) ** Decimal(1 / len(testing_list))
