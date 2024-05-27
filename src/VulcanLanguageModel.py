@@ -10,13 +10,16 @@ formatted_bigram_prob = None
 
 
 def init():
+    if formatted_bigram_prob != None:
+        print("Vulcan Language Model is already initialized...")
+        return
+    
+    
     print("Initializing Vulcan Language Model...")
     text_docs, test_sentences = __load_docs()
     
     print("Words in training set: " + str(len(text_docs)))
     print("Counting frequencies...")
-    
-    
     
     unigram_word_dict, bigram_word_dict, unique_words = __count_freq(text_docs)
     
@@ -29,6 +32,34 @@ def init():
     
     perplexity = calculatePerplexity(test_sentences, bigram_word_prob, unigram_word_dict)
     print(perplexity)
+    
+    
+def predict(word: str) -> tuple[str, str, str]:
+    if formatted_bigram_prob == None:
+        raise Exception("predict() was called before init().")
+    
+    def getWord(arr: list, index: int):
+        try:
+            return arr[index][0]
+        except Exception:
+            return ''
+    
+    try:
+        r: list[tuple[str, float]] = sorted(formatted_bigram_prob[word].items(), key=lambda x: x[1], reverse=True)
+    except KeyError:
+        return ('', '', '')
+        
+        
+    results = []
+    
+    for tup in r:
+        if ((tup[0] in string.punctuation) == False) and ((tup[0] in blacklist) == False):
+            results.append(tup)
+
+    
+    return (getWord(results, 0), getWord(results, 1), getWord(results, 2))
+ 
+    
     
     
 blacklist = '”’‘“ …'
@@ -138,34 +169,6 @@ def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float
 
 
     
-def predict(word: str) -> tuple[str, str, str]:
-    if formatted_bigram_prob == None:
-        raise Exception("predict() was called before init().")
-    
-    def getWord(arr: list, index: int):
-        try:
-            return arr[index][0]
-        except Exception:
-            return ''
-    
-    
-    # word = word.replace("\n", "")
-    
-    
-    try:
-        r: list[tuple[str, float]] = sorted(formatted_bigram_prob[word].items(), key=lambda x: x[1], reverse=True)
-    except KeyError:
-        return ('', '', '')
-        
-        
-    results = []
-    
-    for tup in r:
-        if ((tup[0] in string.punctuation) == False) and ((tup[0] in blacklist) == False):
-            results.append(tup)
-
-    
-    return (getWord(results, 0), getWord(results, 1), getWord(results, 2))
 
 
 def calculatePerplexity(testing_list, bigram_word_prob, unigram_word_dict):
