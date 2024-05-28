@@ -12,7 +12,7 @@ def main():
 def create_window():
     # Create the main window
     root = tk.Tk()
-    root.title("Simple GUI")
+    root.title("Grammarly: Vulcan Edition")
 
     # Set window size
     root.geometry("500x250")
@@ -21,13 +21,13 @@ def create_window():
     root.resizable(False, False)
 
     # Create a label widget
-    label = tk.Label(root, text="Hello, GUI!", padx=20, pady=10)
+    label = tk.Label(root, text="Welcome to Grammarly: Vulcan Edition!", padx=20, pady=10)
     label.pack()
 
     # Create a textbox widget
-    textbox = tk.Text(root, height=5, width=30)
+    textbox = tk.Text(root, height=10, width=50)
     textbox.pack()
-    textbox.bind('<KeyRelease>', lambda event : on_text_change(event, textbox))
+    textbox.bind('<space>', lambda event : on_space(event, textbox))
 
 
     # Start the main event loop
@@ -45,5 +45,20 @@ def on_text_change(event, textbox):
     # print("Text in the textbox:", text)
     # print(event)
     print(VulcanLanguageModel.predict(text))
-    
+
+
+def on_space(event, text):
+    # Get the current position of the cursor
+    cursor_position = text.index(tk.INSERT)
+
+    # Get the text from the start to the cursor position
+    text_before_cursor = text.get("1.0", cursor_position)
+
+    # Split the text to get the words and take the last word
+    words = text_before_cursor.split()
+    if words:
+        last_word = words[-1]
+        print(f"Last word before space: {last_word}")
+        print(VulcanLanguageModel.predict(last_word))
+
 main()

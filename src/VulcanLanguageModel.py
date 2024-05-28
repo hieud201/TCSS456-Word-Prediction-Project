@@ -10,6 +10,7 @@ formatted_bigram_prob = None
 
 
 def init():
+    global formatted_bigram_prob
     if formatted_bigram_prob != None:
         print("Vulcan Language Model is already initialized...")
         return
@@ -26,12 +27,11 @@ def init():
     print("Counting probabilities...")
     bigram_word_prob = __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words)
     
-    global formatted_bigram_prob
     formatted_bigram_prob = __transform(bigram_word_prob)
     print("Init complete")
     
     perplexity = calculatePerplexity(test_sentences, bigram_word_prob, unigram_word_dict)
-    print(perplexity)
+    print("perplexity:", perplexity)
     
     
 def predict(word: str) -> tuple[str, str, str]:
