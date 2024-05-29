@@ -30,7 +30,7 @@ def create_window():
     root.resizable(False, False)
 
     # Create a textbox widget
-    text_box = tk.Text(root, height=15, width=50, font=font.Font(size=14))
+    text_box = tk.Text(root, height=5, width=50, font=font.Font(size=14))
     text_box.pack(pady=30)
     text_box.bind('<space>', lambda event: on_space(root, text_box, button_frame))
 
@@ -76,12 +76,13 @@ def create_new_button(frame, text_box, button_texts):
 
     # Create and pack new buttons with the provided labels
     for text in button_texts:
-        new_button = tk.Button(frame, text=text, command=lambda t=text: print_to_textbox(text_box, t))
+        new_button = tk.Button(frame, text=text, command=lambda t=text: print_to_textbox(text_box, t, frame))
         new_button.pack(side=tk.LEFT, padx=5)
 
 
-def print_to_textbox(text_box, text):
-    text_box.insert(tk.END, text)
+def print_to_textbox(text_box, text, button_frame):
+    text_box.insert(tk.END, text + " ")
+    on_space(None, text_box, button_frame)
 
 
 # Runs the program
