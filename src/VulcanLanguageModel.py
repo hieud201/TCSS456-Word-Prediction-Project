@@ -32,6 +32,10 @@ def init():
 
     unigram_word_dict, bigram_word_dict, unique_words = __count_freq(text_docs)
 
+
+
+
+
     print("Counting probabilities...")
     bigram_word_prob = __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words)
 
@@ -40,6 +44,12 @@ def init():
 
     perplexity = calculate_perplexity(test_sentences, bigram_word_prob, unigram_word_dict)
     print("perplexity:", perplexity)
+    
+    
+    accuracy = __compute_accuracy(bigram_word_dict, test_sentences)
+    print("Accuracy: " + str(accuracy))
+
+
 
 
 def predict(word: str) -> tuple[str, str, str]:
@@ -66,11 +76,14 @@ def predict(word: str) -> tuple[str, str, str]:
     return (get_word(results, 0), get_word(results, 1), get_word(results, 2))
 
 
+
+
+
 blacklist = '”’‘“ …'
 punctuation = "!\"#$%&()*+, ./:;<=>?@[]^_\`{|}~"
 
 
-def __parse_sentence(sentence: str):
+def __parse_sentence(sentence: str) -> list[str]:
     for char in blacklist:
         sentence = sentence.replace(char, "")
 
@@ -113,7 +126,7 @@ def __load_docs() -> tuple[list[str], list[str]]:
     return all_words, testing_set_sentences
 
 
-def __count_freq(word_list: list[str]):
+def __count_freq(word_list: list[str]) -> tuple[dict[str, int], dict[str, int], set[str]]:
     unique_words = set()
     unigram_word_dict = {}
 
@@ -136,7 +149,7 @@ def __count_freq(word_list: list[str]):
     return unigram_word_dict, bigram_word_dict, unique_words
 
 
-def __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words):
+def __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words) -> dict[str, int]:
     bigram_word_prob = {}
     k = 0.1
 
@@ -191,6 +204,117 @@ def calculate_perplexity(testing_list, bigram_word_prob, unigram_word_dict):
         perplexity = "INF"
 
     return perplexity
+
+
+
+def __compute_accuracy(training_bigram_dict, test_sentences):
+    def get(d, key):
+        try:
+            return d[key]
+        except KeyError:
+            return None
+    
+    # Restructure the bigram dictionary
+    restructured_dict: dict[str, dict[str, int]] = dict()
+    
+    for key in training_bigram_dict.keys():
+        s: list[str] = key.split(" ")
+        w1: str = s[0]
+        w2: str = s[1]
+        freq: int = training_bigram_dict[key]
+        
+        if w1 not in restructured_dict:
+            d = dict()
+            d[w2] = freq
+            restructured_dict[w1] = d
+        else:
+            d = restructured_dict[w1]
+            d[w2] = freq
+    
+    
+    total_average = 1
+    
+    
+    total_correct = 0
+    total_incorrect = 0
+    
+    
+    for sentence in test_sentences:
+        split_sentence: list[str] = __parse_sentence(sentence)
+        
+        for i in range(len(split_sentence) - 1):
+            word: str = split_sentence[i].lower()
+            predicted_next_word: str = __unfiltered_predict(word)[0]
+            
+            if predicted_next_word == '':
+                # print(word + " resulted in no predictions. Ignoring...")
+                continue
+            
+            possible_words: dict[str, int] = get(restructured_dict, word)
+            if possible_words == None:
+                # print(word + " wasn't found in the training set. Ignoring...")
+                continue
+            
+            correct = 0
+            incorrect = 0
+            total = 0
+
+            for possible_word in possible_words.keys():
+                if possible_word == predicted_next_word:
+                    correct += possible_words[possible_word]
+                    total_correct +=possible_words[possible_word]
+                else:
+                    incorrect += possible_words[possible_word]
+                    total_incorrect +=possible_words[possible_word]
+                    
+                total += possible_words[possible_word]
+                    
+            print("'" + word + " " + predicted_next_word + "': " + str(possible_words[possible_word]) + "/" + str(incorrect))        
+            total_average *= correct / total
+            print(word + " " + predicted_next_word)
+            print(str(possible_words[predicted_next_word])  + "/" + str(total))
+            print(possible_words)
+            print()
+            # total_correct += correct
+            # total_incorrect += incorrect
+    
+    total_comparisons = total_correct + total_incorrect
+    # return total_correct / total_comparisons  
+    print(total_correct / total_comparisons)  
+    return total_average
+            
+            
+            
+def __unfiltered_predict(word):
+    if formatted_bigram_prob is None:
+        raise Exception("predict() was called before init().")
+
+    def get_word(arr: list, index: int):
+        try:
+            return arr[index][0]
+        except Exception:
+            return ''
+
+    try:
+        r: list[tuple[str, float]] = sorted(formatted_bigram_prob[word].items(), key=lambda x: x[1], reverse=True)
+    except KeyError:
+        return ('', '', '')
+
+    results = []
+
+    for tup in r:
+        if not (tup[0] in blacklist):
+            results.append(tup)
+
+    return (get_word(results, 0), get_word(results, 1), get_word(results, 2))
+            
+            
+            
+            
+        
+        
+        
+    
 
 
 if __name__ == "__main__":
