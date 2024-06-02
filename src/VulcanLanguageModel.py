@@ -1,4 +1,5 @@
 from decimal import Decimal
+import math
 import os
 import nltk
 import string
@@ -219,7 +220,7 @@ def __calculate_trigram_perplexity(testing_list, trigram_word_prob, bigram_word_
     N = 0  # Total number of words
 
     for sentence in testing_list:
-        words = nltk.word_tokenize(sentence)
+        words = __parse_sentence(sentence)
         sent_prob = Decimal(1)  # Initialize sentence probability for each sentence
         N += len(words)  # Update total word count
 
@@ -253,7 +254,7 @@ def __calculate_bigram_perplexity(testing_list, bigram_word_prob, unigram_word_d
     N = 0  # Total number of words
 
     for sentence in testing_list:
-        words = nltk.word_tokenize(sentence)
+        words = __parse_sentence(sentence)
         sent_prob = Decimal(1)  # Initialize sentence probability for each sentence
         N += len(words)  # Update total word count
 
