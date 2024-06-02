@@ -1,5 +1,4 @@
 from decimal import Decimal
-import math
 import os
 import nltk
 import string
@@ -17,10 +16,13 @@ def __get_text_path():
 
 TEXTS_PATH = __get_text_path()
 formatted_bigram_prob = None
+formatted_trigram_prob = None
 
 
 def init(*args):
     global formatted_bigram_prob
+    global formatted_trigram_prob
+    
     if formatted_bigram_prob is not None:
         print("Vulcan Language Model is already initialized...")
         return
@@ -42,8 +44,10 @@ def init(*args):
     # print(trigram_word_prob)
 
     formatted_bigram_prob = __transform(bigram_word_prob)
-    print("Init complete")
+    formatted_trigram_prob = __trigram_transform(trigram_word_prob)
 
+    print("Init complete")
+    
     if (args != ()):
         bigram_perplexity = __calculate_bigram_perplexity(test_sentences, bigram_word_prob, unigram_word_dict)
         print("Bigram perplexity:", bigram_perplexity)
@@ -53,6 +57,8 @@ def init(*args):
         
         # accuracy = __compute_accuracy(bigram_word_dict, test_sentences)
         # print("Accuracy: " + str(accuracy))
+        
+        
 
 
 
@@ -81,6 +87,28 @@ def predict(word: str) -> tuple[str, str, str]:
     return (get_word(results, 0), get_word(results, 1), get_word(results, 2))
 
 
+def trigram_predict(word1, word2):
+    if formatted_bigram_prob is None:
+        raise Exception("predict() was called before init().")
+    
+    def get_word(arr: list, index: int):
+        try:
+            return arr[index][0]
+        except Exception:
+            return ''
+        
+    try:
+        r = sorted(formatted_trigram_prob[word1][word2].items(), key=lambda x: x[1], reverse=True)
+    except KeyError:
+        return ('', '', '')
+    
+    results = []
+
+    for tup in r:
+        if ((tup[0] in string.punctuation) is False) and ((tup[0] in blacklist) is False):
+            results.append(tup)
+
+    return (get_word(results, 0), get_word(results, 1), get_word(results, 2))
 
 
 
@@ -194,6 +222,38 @@ def __count_trigram_prob(bigram_word_dict, unique_words, trigram_word_dict):
     
     
     
+def __trigram_transform(trigram_word_prob):
+    output: dict[str, dict[str, dict[str, float]]] = dict()
+    
+    for word in trigram_word_prob.keys():
+        s: list[str] = word.split(" ")
+        word1: str = s[0]
+        word2: str = s[1]
+        word3: str = s[2]
+        prob: float = trigram_word_prob[word]
+
+        if word1 not in output:
+            d1 = dict()
+            d2 = dict()
+            
+            d1[word2] = d2
+            d2[word3] = prob
+            
+            output[word1] = d1
+        else:
+            d1 = output[word1]
+            if word2 not in d1:
+                d2 = dict()
+                d2[word3] = prob
+                d1[word2] = d2
+            else:
+                d2 = d1[word2]
+                d2[word3] = prob
+    return output
+                
+                
+            
+            
     
     
 

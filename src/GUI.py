@@ -43,7 +43,7 @@ def create_window():
     root.mainloop()
 
 
-def on_space(root, text_box, button_frame):
+def on_space(text_box, button_frame):
     # Get the current position of the cursor
     cursor_position = text_box.index(tk.INSERT)
 
@@ -82,7 +82,7 @@ def create_new_button(frame, text_box, button_texts):
 
 def print_to_textbox(text_box, text, button_frame):
     text_box.insert(tk.END, text + " ")
-    on_space(None, text_box, button_frame)
+    on_space(text_box, button_frame)
 
 
 # Runs the program
