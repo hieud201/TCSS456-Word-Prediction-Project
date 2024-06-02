@@ -18,7 +18,7 @@ TEXTS_PATH = __get_text_path()
 formatted_bigram_prob = None
 
 
-def init():
+def init(*args):
     global formatted_bigram_prob
     if formatted_bigram_prob is not None:
         print("Vulcan Language Model is already initialized...")
@@ -30,8 +30,7 @@ def init():
     print("Words in training set: " + str(len(text_docs)))
     print("Counting frequencies...")
 
-    unigram_word_dict, bigram_word_dict, unique_words = __count_freq(text_docs)
-
+    unigram_word_dict, bigram_word_dict, unique_words, trigram_word_dict = __count_freq(text_docs)
 
 
 
@@ -42,12 +41,12 @@ def init():
     formatted_bigram_prob = __transform(bigram_word_prob)
     print("Init complete")
 
-    perplexity = calculate_perplexity(test_sentences, bigram_word_prob, unigram_word_dict)
-    print("perplexity:", perplexity)
-    
-    
-    accuracy = __compute_accuracy(bigram_word_dict, test_sentences)
-    print("Accuracy: " + str(accuracy))
+    if (args != ()):
+        perplexity = calculate_perplexity(test_sentences, bigram_word_prob, unigram_word_dict)
+        print("perplexity:", perplexity)
+        
+        # accuracy = __compute_accuracy(bigram_word_dict, test_sentences)
+        # print("Accuracy: " + str(accuracy))
 
 
 
@@ -80,7 +79,7 @@ def predict(word: str) -> tuple[str, str, str]:
 
 
 blacklist = '”’‘“ …'
-punctuation = "!\"#$%&()*+, ./:;<=>?@[]^_\`{|}~"
+punctuation = "!\"#$%&()*+, ./:;<=>?@[]^_\\`{|}~"
 
 
 def __parse_sentence(sentence: str) -> list[str]:
@@ -145,8 +144,20 @@ def __count_freq(word_list: list[str]) -> tuple[dict[str, int], dict[str, int], 
             bigram_word_dict[word] += 1
         except KeyError:
             bigram_word_dict[word] = 1
+            
+            
+    trigram_word_dict = {}
+    for i in range(len(word_list) - 2):
+        word = word_list[i] + " " + word_list[i + 1] + " " + word_list[i + 2]
+        try:
+            trigram_word_dict[word] += 1
+        except KeyError:
+            trigram_word_dict[word] = 1
+    
+    # print(trigram_word_dict)
+     
 
-    return unigram_word_dict, bigram_word_dict, unique_words
+    return unigram_word_dict, bigram_word_dict, unique_words, trigram_word_dict
 
 
 def __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words) -> dict[str, int]:
@@ -179,32 +190,39 @@ def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float
     return output
 
 
+
 def calculate_perplexity(testing_list, bigram_word_prob, unigram_word_dict):
     total_prob = Decimal(1)
+    N = 0  # Total number of words
 
     for sentence in testing_list:
-        sent_prob = 1
         words = nltk.word_tokenize(sentence)
+        sent_prob = Decimal(1)  # Initialize sentence probability for each sentence
+        N += len(words)  # Update total word count
+
         for i in range(len(words) - 1):
-            try:
-                bigram = words[i].lower() + " " + words[i + 1].lower()
-                sent_prob *= bigram_word_prob[bigram]
-            except KeyError:
+            bigram = words[i].lower() + " " + words[i + 1].lower()
+            if bigram in bigram_word_prob:
+                sent_prob *= Decimal(bigram_word_prob[bigram])
+            else:
                 # Apply K-Smoothing with k = 0.1
-                k = 0.1
-                try:
-                    prev_word_count = unigram_word_dict[words[i].lower()]
-                    sent_prob *= k / (prev_word_count + len(unigram_word_dict) * k)
-                except KeyError:  # If prev word doesn't exist in training data
-                    sent_prob *= k / (len(unigram_word_dict) * k)
+                k = Decimal(0.1)
+                prev_word = words[i].lower()
+                if prev_word in unigram_word_dict:
+                    prev_word_count = Decimal(unigram_word_dict[prev_word])
+                    smoothed_prob = k / (prev_word_count + Decimal(len(unigram_word_dict)) * k)
+                else:  # If previous word doesn't exist in training data
+                    smoothed_prob = k / (Decimal(len(unigram_word_dict)) * k)
+                sent_prob *= smoothed_prob
+
+        total_prob *= sent_prob
 
     try:
-        perplexity = (1 / total_prob) ** Decimal(1 / len(testing_list))
+        perplexity = (Decimal(1) / total_prob) ** (Decimal(1) / N)
     except ZeroDivisionError:
         perplexity = "INF"
 
     return perplexity
-
 
 
 def __compute_accuracy(training_bigram_dict, test_sentences):
@@ -269,8 +287,8 @@ def __compute_accuracy(training_bigram_dict, test_sentences):
                     
                 total += possible_words[possible_word]
                     
-            print("'" + word + " " + predicted_next_word + "': " + str(possible_words[possible_word]) + "/" + str(incorrect))        
-            total_average *= correct / total
+            # print("'" + word + " " + predicted_next_word + "': " + str(possible_words[possible_word]) + "/" + str(incorrect))        
+            # total_average *= correct / total
             print(word + " " + predicted_next_word)
             print(str(possible_words[predicted_next_word])  + "/" + str(total))
             print(possible_words)
@@ -318,4 +336,4 @@ def __unfiltered_predict(word):
 
 
 if __name__ == "__main__":
-    init()
+    init(True)
