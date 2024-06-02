@@ -38,14 +38,17 @@ def init(*args):
     print("Counting probabilities...")
     bigram_word_prob = __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words)
     trigram_word_prob = __count_trigram_prob(unigram_word_dict, unique_words, trigram_word_dict)
-    print(trigram_word_prob)
+    # print(trigram_word_prob)
 
     formatted_bigram_prob = __transform(bigram_word_prob)
     print("Init complete")
 
     if (args != ()):
-        perplexity = __calculate_perplexity(test_sentences, bigram_word_prob, unigram_word_dict)
-        print("perplexity:", perplexity)
+        bigram_perplexity = __calculate_bigram_perplexity(test_sentences, bigram_word_prob, unigram_word_dict)
+        print("Bigram perplexity:", bigram_perplexity)
+        
+        trigram_perplexity = __calculate_trigram_perplexity(test_sentences, trigram_word_prob, bigram_word_prob, unigram_word_dict)
+        print("Trigram perplexity:", trigram_perplexity)
         
         # accuracy = __compute_accuracy(bigram_word_dict, test_sentences)
         # print("Accuracy: " + str(accuracy))
@@ -211,8 +214,41 @@ def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float
     return output
 
 
+def __calculate_trigram_perplexity(testing_list, trigram_word_prob, bigram_word_dict, unigram_word_dict):
+    total_prob = Decimal(1)
+    N = 0  # Total number of words
 
-def __calculate_perplexity(testing_list, bigram_word_prob, unigram_word_dict):
+    for sentence in testing_list:
+        words = nltk.word_tokenize(sentence)
+        sent_prob = Decimal(1)  # Initialize sentence probability for each sentence
+        N += len(words)  # Update total word count
+
+        for i in range(len(words) - 2):
+            trigram = f"{words[i].lower()} {words[i+1].lower()} {words[i+2].lower()}"
+            if trigram in trigram_word_prob:
+                sent_prob *= Decimal(trigram_word_prob[trigram])
+            else:
+                # Apply K-Smoothing with k = 0.1
+                k = Decimal(0.1)
+                bigram = f"{words[i].lower()} {words[i+1].lower()}"
+                if bigram in bigram_word_dict:
+                    bigram_count = Decimal(bigram_word_dict[bigram])
+                    smoothed_prob = k / (bigram_count + Decimal(len(unigram_word_dict)) * k)
+                else:  # If bigram doesn't exist in training data
+                    smoothed_prob = k / (Decimal(len(unigram_word_dict)) * k)
+                sent_prob *= smoothed_prob
+
+        total_prob *= sent_prob
+
+    try:
+        perplexity = (Decimal(1) / total_prob) ** (Decimal(1) / N)
+    except ZeroDivisionError:
+        perplexity = "INF"
+
+    return perplexity
+
+
+def __calculate_bigram_perplexity(testing_list, bigram_word_prob, unigram_word_dict):
     total_prob = Decimal(1)
     N = 0  # Total number of words
 
