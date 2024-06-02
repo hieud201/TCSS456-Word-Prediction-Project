@@ -58,8 +58,11 @@ def init(*args):
         trigram_perplexity = __calculate_trigram_perplexity(test_sentences, trigram_word_prob, bigram_word_prob, unigram_word_dict)
         print("Trigram perplexity:", trigram_perplexity)
         
-        # accuracy = __compute_accuracy(bigram_word_dict, test_sentences)
-        # print("Accuracy: " + str(accuracy))
+        bigram_accuracy = __compute_bigram_accuracy(bigram_word_dict, test_sentences)
+        print("Bigram Accuracy: " + str(bigram_accuracy))
+        
+        trigram_accuracy = __compute_trigram_accuracy(trigram_word_dict, test_sentences)
+        print("Trigram Accuracy: " + str(trigram_accuracy))
         
         
 
@@ -101,7 +104,7 @@ def trigram_predict(word1, word2):
             return ''
         
     try:
-        r = sorted(formatted_trigram_prob[word1][word2].items(), key=lambda x: x[1], reverse=True)
+        r = sorted(formatted_trigram_prob[(word1, word2)].items(), key=lambda x: x[1], reverse=True)
     except KeyError:
         return ('', '', '')
     
@@ -226,39 +229,24 @@ def __count_trigram_prob(bigram_word_dict, unique_words, trigram_word_dict):
     
     
 def __trigram_transform(trigram_word_prob):
-    output: dict[str, dict[str, dict[str, float]]] = dict()
-    
+    output: dict[str, dict[str, float]] = dict()
     for word in trigram_word_prob.keys():
         s: list[str] = word.split(" ")
-        word1: str = s[0]
-        word2: str = s[1]
-        word3: str = s[2]
+        w1, w2, w3 = s[0], s[1], s[2]
         prob: float = trigram_word_prob[word]
 
-        if word1 not in output:
-            d1 = dict()
-            d2 = dict()
-            
-            d1[word2] = d2
-            d2[word3] = prob
-            
-            output[word1] = d1
+        if (w1, w2) not in output:
+            d = dict()
+            d[w3] = prob
+            output[(w1, w2)] = d
         else:
-            d1 = output[word1]
-            if word2 not in d1:
-                d2 = dict()
-                d2[word3] = prob
-                d1[word2] = d2
-            else:
-                d2 = d1[word2]
-                d2[word3] = prob
+            d = output[(w1, w2)]
+            d[w3] = prob
+
     return output
                 
                 
             
-            
-    
-    
 
 def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float]]:
     output: dict[str, dict[str, float]] = dict()
@@ -278,6 +266,8 @@ def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float
 
     return output
 
+
+
 def __calculate_trigram_perplexity(testing_list, trigram_word_prob, bigram_word_dict, unigram_word_dict):
     total_log_prob = Decimal(0)
     N = 0  # Total number of words
@@ -293,7 +283,7 @@ def __calculate_trigram_perplexity(testing_list, trigram_word_prob, bigram_word_
             else:
                 # Apply K-Smoothing with k = 0.1
                 k = Decimal(0.1)
-                bigram = f"{words[i].lower()} {words[i+1].lower()}"
+                bigram = f"{words[i].lower()} {words[i + 1].lower()}"
                 if bigram in bigram_word_dict:
                     bigram_count = Decimal(bigram_word_dict[bigram])
                     smoothed_prob = k / (bigram_count + Decimal(len(unigram_word_dict)) * k)
@@ -346,116 +336,48 @@ def __calculate_bigram_perplexity(testing_list, bigram_word_prob, unigram_word_d
 
     return perplexity
 
-
-def __compute_accuracy(training_bigram_dict, test_sentences):
-    def get(d, key):
-        try:
-            return d[key]
-        except KeyError:
-            return None
-    
-    # Restructure the bigram dictionary
-    restructured_dict: dict[str, dict[str, int]] = dict()
-    
-    for key in training_bigram_dict.keys():
-        s: list[str] = key.split(" ")
-        w1: str = s[0]
-        w2: str = s[1]
-        freq: int = training_bigram_dict[key]
+def __compute_trigram_accuracy(trigram_prob, testing_set):
+    trigram_word_prob = __trigram_transform(trigram_prob)
         
-        if w1 not in restructured_dict:
-            d = dict()
-            d[w2] = freq
-            restructured_dict[w1] = d
-        else:
-            d = restructured_dict[w1]
-            d[w2] = freq
+    total_trigrams = 0
+    correct_predictions = 0
     
-    
-    total_average = 1
-    
-    
-    total_correct = 0
-    total_incorrect = 0
-    
-    
-    for sentence in test_sentences:
-        split_sentence: list[str] = __parse_sentence(sentence)
+    for sentence in testing_set:
+        words = __parse_sentence(sentence)
         
-        for i in range(len(split_sentence) - 1):
-            word: str = split_sentence[i].lower()
-            predicted_next_word: str = __unfiltered_predict(word)[0]
-            
-            if predicted_next_word == '':
-                # print(word + " resulted in no predictions. Ignoring...")
-                continue
-            
-            possible_words: dict[str, int] = get(restructured_dict, word)
-            if possible_words == None:
-                # print(word + " wasn't found in the training set. Ignoring...")
-                continue
-            
-            correct = 0
-            incorrect = 0
-            total = 0
+        for i in range(len(words) - 2):
+            w1, w2, w3 = words[i], words[i+1], words[i + 2]
+            next_word_probs = trigram_word_prob.get((w1, w2), {})
+            if next_word_probs:
+                predicted_word = max(next_word_probs, key=next_word_probs.get)
+                if predicted_word == w3:
+                    correct_predictions += 1
+            total_trigrams += 1
 
-            for possible_word in possible_words.keys():
-                if possible_word == predicted_next_word:
-                    correct += possible_words[possible_word]
-                    total_correct +=possible_words[possible_word]
-                else:
-                    incorrect += possible_words[possible_word]
-                    total_incorrect +=possible_words[possible_word]
-                    
-                total += possible_words[possible_word]
-                    
-            # print("'" + word + " " + predicted_next_word + "': " + str(possible_words[possible_word]) + "/" + str(incorrect))        
-            # total_average *= correct / total
-            print(word + " " + predicted_next_word)
-            print(str(possible_words[predicted_next_word])  + "/" + str(total))
-            print(possible_words)
-            print()
-            # total_correct += correct
-            # total_incorrect += incorrect
+    return correct_predictions / total_trigrams if total_trigrams > 0 else 0
+
+
+
+def __compute_bigram_accuracy(bigram_prob, testing_set):
+    bigram_word_prob = __transform(bigram_prob)
     
-    total_comparisons = total_correct + total_incorrect
-    # return total_correct / total_comparisons  
-    print(total_correct / total_comparisons)  
-    return total_average
-            
-            
-            
-def __unfiltered_predict(word):
-    if formatted_bigram_prob is None:
-        raise Exception("predict() was called before init().")
-
-    def get_word(arr: list, index: int):
-        try:
-            return arr[index][0]
-        except Exception:
-            return ''
-
-    try:
-        r: list[tuple[str, float]] = sorted(formatted_bigram_prob[word].items(), key=lambda x: x[1], reverse=True)
-    except KeyError:
-        return ('', '', '')
-
-    results = []
-
-    for tup in r:
-        if not (tup[0] in blacklist):
-            results.append(tup)
-
-    return (get_word(results, 0), get_word(results, 1), get_word(results, 2))
-            
-            
-            
-            
-        
-        
-        
+    total_bigrams = 0
+    correct_predictions = 0
     
+    for sentence in testing_set:
+        words = __parse_sentence(sentence)
+        for i in range(len(words)-1):
+            w1, w2 = words[i], words[i+1]
+            next_word_probs = bigram_word_prob.get(w1, {})
+            if next_word_probs:
+                predicted_word = max(next_word_probs, key=next_word_probs.get)
+                if predicted_word == w2:
+                    correct_predictions += 1
+            total_bigrams += 1
 
+    return correct_predictions / total_bigrams
+
+            
 
 if __name__ == "__main__":
     init(True)

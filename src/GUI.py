@@ -32,7 +32,7 @@ def create_window():
     # Create a textbox widget
     text_box = tk.Text(root, height=5, width=50, font=font.Font(size=14))
     text_box.pack(pady=30)
-    text_box.bind('<space>', lambda event: on_space(root, text_box, button_frame))
+    text_box.bind('<space>', lambda event: on_space(text_box, button_frame))
 
     # Create a frame to hold the buttons
     button_frame = tk.Frame(root)
