@@ -30,7 +30,7 @@ def main():
                 contents = contents.replace(char, '')
             
             for char in contents:
-                if not char.isalnum() and not char in string.punctuation and not char == ' ' and not char == '\n':
+                if not char.isalnum() and not char in string.punctuation and not char == ' ' and not char == '\n' and not char == '\t':
                     illegal_chars += char + "\n"
             
             with open(CLEANED_DIR + file, "w", encoding='utf-8') as out_file:

@@ -1,8 +1,11 @@
-from decimal import Decimal
+from decimal import Decimal, getcontext, DivisionByZero, InvalidOperation
+
 import os
 import nltk
 import string
 nltk.download('punkt')
+
+getcontext().prec = 50
 
 
 def __get_text_path():
@@ -275,20 +278,18 @@ def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float
 
     return output
 
-
 def __calculate_trigram_perplexity(testing_list, trigram_word_prob, bigram_word_dict, unigram_word_dict):
-    total_prob = Decimal(1)
+    total_log_prob = Decimal(0)
     N = 0  # Total number of words
 
     for sentence in testing_list:
         words = __parse_sentence(sentence)
-        sent_prob = Decimal(1)  # Initialize sentence probability for each sentence
         N += len(words)  # Update total word count
 
         for i in range(len(words) - 2):
             trigram = f"{words[i].lower()} {words[i+1].lower()} {words[i+2].lower()}"
             if trigram in trigram_word_prob:
-                sent_prob *= Decimal(trigram_word_prob[trigram])
+                trigram_prob = Decimal(trigram_word_prob[trigram])
             else:
                 # Apply K-Smoothing with k = 0.1
                 k = Decimal(0.1)
@@ -298,16 +299,18 @@ def __calculate_trigram_perplexity(testing_list, trigram_word_prob, bigram_word_
                     smoothed_prob = k / (bigram_count + Decimal(len(unigram_word_dict)) * k)
                 else:  # If bigram doesn't exist in training data
                     smoothed_prob = k / (Decimal(len(unigram_word_dict)) * k)
-                sent_prob *= smoothed_prob
-
-        total_prob *= sent_prob
+                trigram_prob = smoothed_prob
+            
+            total_log_prob += trigram_prob.ln()  # Use natural log for probabilities
 
     try:
-        perplexity = (Decimal(1) / total_prob) ** (Decimal(1) / N)
-    except ZeroDivisionError:
-        perplexity = "INF"
+        avg_log_prob = total_log_prob / Decimal(N)
+        perplexity = (Decimal(1) / avg_log_prob.exp())
+    except (DivisionByZero, InvalidOperation):
+        perplexity = Decimal('Infinity')
 
     return perplexity
+
 
 
 def __calculate_bigram_perplexity(testing_list, bigram_word_prob, unigram_word_dict):
@@ -339,7 +342,7 @@ def __calculate_bigram_perplexity(testing_list, bigram_word_prob, unigram_word_d
     try:
         perplexity = (Decimal(1) / total_prob) ** (Decimal(1) / N)
     except ZeroDivisionError:
-        perplexity = "INF"
+        perplexity = Decimal('Infinity')
 
     return perplexity
 
