@@ -173,18 +173,16 @@ def __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words) -> di
     return bigram_word_prob
 
 
-def __count_trigram_prob(unigram_word_dict, unique_words, trigram_word_dict):
+def __count_trigram_prob(bigram_word_dict, unique_words, trigram_word_dict):
     trigram_word_prob = {}
     k = 0.1
     
     for trigram in trigram_word_dict.keys():
-        # Get the second word of the trigram (word2 in "word1 word2 word3")
-        prev_word = trigram.split(" ")[1]
+        prev_word = " ".join(trigram.split(" ")[:-1])
         
-        if prev_word in unigram_word_dict:
-            trigram_word_prob[trigram] = (trigram_word_dict[trigram] + k) / (unigram_word_dict[prev_word] + k * len(unique_words))
+        if prev_word in bigram_word_dict:
+            trigram_word_prob[trigram] = (trigram_word_dict[trigram] + k) / (bigram_word_dict[prev_word] + k * len(unique_words))
         else:
-            # Handle the case where prev_word is not found in unigram_word_dict
             trigram_word_prob[trigram] = k / (k * len(unique_words))
         
     return trigram_word_prob
