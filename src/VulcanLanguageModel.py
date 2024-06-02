@@ -37,12 +37,14 @@ def init(*args):
 
     print("Counting probabilities...")
     bigram_word_prob = __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words)
+    trigram_word_prob = __count_trigram_prob(unigram_word_dict, unique_words, trigram_word_dict)
+    print(trigram_word_prob)
 
     formatted_bigram_prob = __transform(bigram_word_prob)
     print("Init complete")
 
     if (args != ()):
-        perplexity = calculate_perplexity(test_sentences, bigram_word_prob, unigram_word_dict)
+        perplexity = __calculate_perplexity(test_sentences, bigram_word_prob, unigram_word_dict)
         print("perplexity:", perplexity)
         
         # accuracy = __compute_accuracy(bigram_word_dict, test_sentences)
@@ -171,6 +173,27 @@ def __count_bigram_prob(unigram_word_dict, bigram_word_dict, unique_words) -> di
     return bigram_word_prob
 
 
+def __count_trigram_prob(unigram_word_dict, unique_words, trigram_word_dict):
+    trigram_word_prob = {}
+    k = 0.1
+    
+    for trigram in trigram_word_dict.keys():
+        # Get the second word of the trigram (word2 in "word1 word2 word3")
+        prev_word = trigram.split(" ")[1]
+        
+        if prev_word in unigram_word_dict:
+            trigram_word_prob[trigram] = (trigram_word_dict[trigram] + k) / (unigram_word_dict[prev_word] + k * len(unique_words))
+        else:
+            # Handle the case where prev_word is not found in unigram_word_dict
+            trigram_word_prob[trigram] = k / (k * len(unique_words))
+        
+    return trigram_word_prob
+    
+    
+    
+    
+    
+
 def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float]]:
     output: dict[str, dict[str, float]] = dict()
     for word in bigram_word_prob.keys():
@@ -191,7 +214,7 @@ def __transform(bigram_word_prob: dict[str, float]) -> dict[str, dict[str, float
 
 
 
-def calculate_perplexity(testing_list, bigram_word_prob, unigram_word_dict):
+def __calculate_perplexity(testing_list, bigram_word_prob, unigram_word_dict):
     total_prob = Decimal(1)
     N = 0  # Total number of words
 
