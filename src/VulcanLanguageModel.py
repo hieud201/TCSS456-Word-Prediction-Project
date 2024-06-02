@@ -84,7 +84,7 @@ def predict(word: str) -> tuple[str, str, str]:
 
 
 
-blacklist = '“”‘’ …'
+blacklist = '“”‘’ …_—﻿™•£·'
 punctuation = "!\"#$%&()*+, ./:;<=>?@[]^_\\`{|}~"
 
 
@@ -96,6 +96,7 @@ def __parse_sentence(sentence: str) -> list[str]:
     for word in sentence.split(" "):
         if not word:
             continue
+        
 
         if word[-1] in punctuation:
             output.append(word[:-1])
