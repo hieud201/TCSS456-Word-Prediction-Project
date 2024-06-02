@@ -84,7 +84,7 @@ def predict(word: str) -> tuple[str, str, str]:
 
 
 
-blacklist = '”’‘“ …'
+blacklist = '“”‘’ …'
 punctuation = "!\"#$%&()*+, ./:;<=>?@[]^_\\`{|}~"
 
 
