@@ -8,16 +8,16 @@ nltk.download('punkt')
 getcontext().prec = 50
 
 
-def __get_text_path():
+def get_path(dir: str) -> str:
     # Get the directory of the current file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     # Get the absolute path of the project directory
     project_directory = os.path.abspath(os.path.join(current_file_directory, os.pardir))
     # Get the absolute path to the data folder
-    return os.path.join(project_directory, 'data') + '/'
+    return os.path.join(project_directory, dir) + os.sep
 
 
-TEXTS_PATH = __get_text_path()
+TEXTS_PATH = get_path('data')
 formatted_bigram_prob = None
 formatted_trigram_prob = None
 

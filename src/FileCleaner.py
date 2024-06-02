@@ -1,9 +1,10 @@
 import os
 import string
+import VulcanLanguageModel
 
-UNCLEANED_DIR = "./uncleaned_texts/"
-CLEANED_DIR = './cleaned_texts/'
-TRANSLATED_DIR = './data/'
+UNCLEANED_DIR = VulcanLanguageModel.get_path('uncleaned_texts') # './uncleaned_texts/'
+CLEANED_DIR = VulcanLanguageModel.get_path('cleaned_texts') # './cleaned_texts/'
+TRANSLATED_DIR = VulcanLanguageModel.get_path('data') # './data/'
 
 REPLACE = {
     '“':'"',
