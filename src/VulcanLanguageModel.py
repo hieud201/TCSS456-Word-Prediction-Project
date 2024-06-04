@@ -32,8 +32,15 @@ def init(*args):
 
     print("Initializing Vulcan Language Model...")
     text_docs, test_sentences = __load_docs()
-
-    print("Words in training set: " + str(len(text_docs)))
+    
+    testing_set_words = 0
+    for sentence in test_sentences:
+        words = __parse_sentence(sentence)
+        testing_set_words += len(words)
+    
+    print("Overall Dataset Size (# of words):", len(text_docs) + testing_set_words)
+    print("Training Set Size: " + str(len(text_docs)))
+    print("Testing Set Size:", testing_set_words)
     print("Counting frequencies...")
 
     unigram_word_dict, bigram_word_dict, unique_words, trigram_word_dict = __count_freq(text_docs)
